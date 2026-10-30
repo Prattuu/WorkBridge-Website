@@ -1,0 +1,27 @@
+{
+  "name": "workbridge-monorepo",
+  "version": "1.0.0",
+  "description": "Hyperlocal On-Demand Gig Workforce Platform with Single-Token Dynamic Escrow",
+  "private": true,
+  "scripts": {
+    "server": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "client:build": "npm --prefix client run build",
+    "ai": "python server/ai_service/app.py",
+    "install:server": "npm --prefix server install",
+    "install:client": "npm --prefix client install",
+    "install:all": "npm --prefix server install && npm --prefix client install"
+  },
+  "keywords": [
+    "gig-workforce",
+    "single-token-escrow",
+    "hyperlocal",
+    "geofence",
+    "ai-verification",
+    "ocr",
+    "speech-nlp"
+  ],
+  "author": "WorkBridge Engineering",
+  "license": "MIT"
+}

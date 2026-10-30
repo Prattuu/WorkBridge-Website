@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Database Service: PostgreSQL 3NF Normalized ACID Store
+  postgres:
+    image: postgres:16-alpine
+    container_name: workbridge-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: workbridge
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./server/src/models/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d workbridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Cache & Live Shift Timer Service: Redis
+  redis:
+    image: redis:7-alpine
+    container_name: workbridge-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend API & Single-Token Escrow Engine
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: workbridge-api-server
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/workbridge
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      AI_SERVICE_URL: http://ai_service:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Python AI Verification Microservice (Mock OCR & Pitch NLP)
+  ai_service:
+    build:
+      context: ./server/ai_service
+      dockerfile: Dockerfile
+    container_name: workbridge-ai-service
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: 8000
+      PYTHONUNBUFFERED: 1
+
+  # Frontend Web Client
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: workbridge-web-client
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
+  redisdata:
